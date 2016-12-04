@@ -1,0 +1,54 @@
+<project name="TeamDz" default="tests.stubs.compilation">
+	<target name="tests.stubs.compilation">
+		<echo message="Recompiling stubs..." />
+	
+		<echo
+			message="Recompiling fr.upmc.datacenterclient.requestDispatcher.RequestDispatcherManagerInboundPort" />
+
+		<rmic
+			classname="fr.upmc.datacenterclient.requestDispatcher.ports.RequestDispatcherManagerInboundPort"
+			base="../../../../../../TeamDz/bin/">
+			<classpath>
+				<pathelement path="${classpath}:../../../../../../TeamDz/bin/" />
+				<pathelement path="${classpath}:../../../../../../TeamDz/jars/" />
+				<fileset dir="${classpath}:../../../../../../../jars">
+					<include name="**/*.jar" />
+				</fileset>
+			</classpath>
+
+		</rmic>
+		<echo
+			message="Recompiling fr.upmc.datacenter.software.ports.RequestSubmissionInboundPort" />
+
+		<rmic
+			classname="fr.upmc.datacenter.software.ports.RequestSubmissionInboundPort"
+			base="../../../../../../TeamDz/bin/">
+			<classpath>
+				<pathelement path="${classpath}:../../../../../../TeamDz/bin/" />
+				<pathelement path="${classpath}:../../../../../../TeamDz/jars/" />
+				<fileset dir="${classpath}:../../../../../../../jars">
+					<include name="**/*.jar" />
+				</fileset>
+			</classpath>
+
+		</rmic>	
+		<echo
+			message="Recompiling fr.upmc.datacenter.software.ports.RequestNotificationInboundPort" />
+
+		<rmic
+			classname="fr.upmc.datacenter.software.ports.RequestNotificationInboundPort"
+			base="../../../../../../TeamDz/bin/">
+			<classpath>
+				<pathelement path="${classpath}:../../../../../../TeamDz/bin/" />
+				<pathelement path="${classpath}:../../../../../../TeamDz/jars/" />
+				<fileset dir="${classpath}:../../../../../../../jars">
+					<include name="**/*.jar" />
+				</fileset>
+			</classpath>
+
+		</rmic>
+		
+		
+		<echo message="Stubs recompiled!" />
+	</target>
+</project>
