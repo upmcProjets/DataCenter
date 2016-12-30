@@ -5,4 +5,4 @@ if [ -z "$1" ]; then
  fi
 java -ea -cp '${classpath}:../bin/*' -Djava.security.manager \
 	 -Djava.security.policy=dcvm.policy \
-	 fr.upmc.datacenterclient.basic_admissionController.TestDistributedAdmisionController $1 config.xml
+	 fr.upmc.datacenterclient.basic_admissionControllerv1.TestDistributedAdmisionController $1 config.xml

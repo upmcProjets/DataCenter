@@ -47,6 +47,7 @@ public class TestRequestDispatcher extends AbstractCVM {
 	public static final String	RepartiteurNotificationOutboundPortURI 		= "rpnobp" ;
 	public static final String	RepartiteurRequestManagementInboundPortURI 	= "rprmip" ;
 	public static final String	RepartiteurRequestManagementOutboundPortURI = "rprmop" ;
+	public static final String  RequestDispatcherDynamiceDataInboundPort 	= "rdddip" ;
 
 	/**		 uri des ports de la vm 0 		*/
 	public static final String	RequestSubmissionOutboundPortURI 			= "rsobp" ;
@@ -204,7 +205,9 @@ public class TestRequestDispatcher extends AbstractCVM {
 						RepartiteurNotificationInboundPortURI,
 						RepartiteurSubmissionOutboundPortURI,
 						RepartiteurNotificationOutboundPortURI,
-						RepartiteurRequestManagementInboundPortURI);
+						RepartiteurRequestManagementInboundPortURI,
+						"fsd",
+						RequestDispatcherDynamiceDataInboundPort);
 		this.addDeployedComponent(rep);		
 		rep.toggleLogging();
 		rep.toggleTracing();
@@ -220,7 +223,7 @@ public class TestRequestDispatcher extends AbstractCVM {
 		// Creating the request generator component.
 		RequestGenerator rg =
 				new RequestGenerator(
-						"rg",  500.0  , 6000000000L,	
+						"rg",  50.0  , 6000000000L,	
 						RequestGeneratorManagementInboundPortURI,
 						RequestSubmissionOutboundPortURI,
 						RequestNotificationInboundPortURI) ;
@@ -267,7 +270,7 @@ public class TestRequestDispatcher extends AbstractCVM {
 		rpnop1.doConnection(
 				inBoundPortDispatcher1,
 				RequestNotificationConnector.class.getCanonicalName()) ;
-
+		/*
 		String inBoundPortDispatcher2 = rprmop.ajouterVM(RequestSubmissionInboundPortURI2);
 		RequestNotificationOutboundPort rpnop2 =(RequestNotificationOutboundPort) 
 				mv2.findPortFromURI(RequestNotificationOutboundPortURI2) ;
@@ -281,7 +284,7 @@ public class TestRequestDispatcher extends AbstractCVM {
 		rpnop3.doConnection(
 				inBoundPortDispatcher3,
 				RequestNotificationConnector.class.getCanonicalName()) ;
-		
+		*/
 	}
 
 	@Override
@@ -305,11 +308,11 @@ public class TestRequestDispatcher extends AbstractCVM {
 		// start the request generation in the request generator.
 		this.rgmop.startGeneration() ;
 		// wait 20 seconds
-	
-		Thread.sleep(1000L);
+		System.out.println("######################################");
+		Thread.sleep(20000L);
 		
-		this.rprmop.supprimerVM(RequestSubmissionInboundPortURI2);
-		Thread.sleep(1000L) ;
+		//this.rprmop.supprimerVM(RequestSubmissionInboundPortURI2);
+		//Thread.sleep(1000L) ;
 		// then stop the generation.
 		this.rgmop.stopGeneration() ;
 	}

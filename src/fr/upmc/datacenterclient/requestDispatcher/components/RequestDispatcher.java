@@ -5,13 +5,20 @@ package fr.upmc.datacenterclient.requestDispatcher.components;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Queue;
+import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 
 import fr.upmc.components.AbstractComponent;
+import fr.upmc.components.ComponentI;
 import fr.upmc.components.cvm.AbstractCVM;
 import fr.upmc.components.exceptions.ComponentShutdownException;
+import fr.upmc.components.exceptions.ComponentStartException;
+import fr.upmc.datacenter.interfaces.ControlledDataOfferedI;
+import fr.upmc.datacenter.interfaces.PushModeControllerI;
 import fr.upmc.datacenter.software.connectors.RequestSubmissionConnector;
 import fr.upmc.datacenter.software.interfaces.RequestI;
 import fr.upmc.datacenter.software.interfaces.RequestNotificationHandlerI;
@@ -22,7 +29,9 @@ import fr.upmc.datacenter.software.ports.RequestNotificationInboundPort;
 import fr.upmc.datacenter.software.ports.RequestNotificationOutboundPort;
 import fr.upmc.datacenter.software.ports.RequestSubmissionInboundPort;
 import fr.upmc.datacenter.software.ports.RequestSubmissionOutboundPort;
+import fr.upmc.datacenterclient.requestDispatcher.interfaces.RequestDispatcherDynamicStateI;
 import fr.upmc.datacenterclient.requestDispatcher.interfaces.RequestDispatcherManagerI;
+import fr.upmc.datacenterclient.requestDispatcher.ports.RequestDispatcherDynamicStateInboundPort;
 import fr.upmc.datacenterclient.requestDispatcher.ports.RequestDispatcherManagerInboundPort;
 import fr.upmc.datacenterclient.utils.TimeProcessing;
 
@@ -50,7 +59,8 @@ import fr.upmc.datacenterclient.utils.TimeProcessing;
 public class RequestDispatcher 
 extends AbstractComponent
 implements RequestNotificationHandlerI,
-RequestSubmissionHandlerI {
+RequestSubmissionHandlerI,
+PushModeControllerI{
 
 
 	protected final String  dispatcherURI ;
@@ -58,10 +68,21 @@ RequestSubmissionHandlerI {
 	protected RequestSubmissionOutboundPort		rsop ;
 	protected RequestNotificationInboundPort	rnip ;
 	protected RequestNotificationOutboundPort   rnop ;
+	//protected RequestDispatcherSensorInboundPort rdddip ;
 	protected RequestDispatcherManagerInboundPort rprmip ;
+
+	// port pour le sensor
+	
+	protected RequestDispatcherDynamicStateInboundPort    rddsip ;
+
+	protected Map<String,Long> debutReq;
+	protected long finReq;
+	protected ScheduledFuture<?>		pushingFuture ;
+	protected boolean active ;
 
 	//Structure pour gerer les vm allouer
 	protected Map<String,RequestSubmissionOutboundPort> vmsOutboundPort ;
+	protected Queue<RequestDispatcherDynamicState> dataTimes ;
 	protected int vmNumero ;
 
 	/**
@@ -93,7 +114,9 @@ RequestSubmissionHandlerI {
 			String requestNotificationInboundPort,
 			String requestSubmissionOutboundPort,
 			String requestNotificationOutboundPort,
-			String repartiteurRequestManagerInboundPort
+			String repartiteurRequestManagerInboundPort,
+			String requestDispatcherStaticStateDataInboundPort,
+			String requestDispatcherDynamiceDataInboundPort
 			) throws Exception
 	{
 		super(1, 1);
@@ -106,9 +129,13 @@ RequestSubmissionHandlerI {
 				repartiteurRequestManagerInboundPort != null ;
 
 		this.dispatcherURI = repURI ;
+		this.active = false ;
 
 		this.vmsOutboundPort = new HashMap<String,RequestSubmissionOutboundPort>();
 		this.vmNumero = 0 ;
+		this.debutReq = new HashMap<String,Long>();
+		this.dataTimes = new  LinkedList<RequestDispatcherDynamicState>();
+		this.pushingFuture = null ;
 
 		this.addRequiredInterface(RequestSubmissionI.class);
 		this.rsop = new RequestSubmissionOutboundPort(requestSubmissionOutboundPort, this);
@@ -129,7 +156,8 @@ RequestSubmissionHandlerI {
 		}
 
 		this.addOfferedInterface(RequestSubmissionI.class);
-		this.rsip = new RequestSubmissionInboundPort(requestSubmissionInboundPort, this);
+		this.rsip = new RequestSubmissionInboundPort(
+				requestSubmissionInboundPort, this);
 		this.addPort(rsip);
 
 		if(AbstractCVM.isDistributed){
@@ -139,7 +167,8 @@ RequestSubmissionHandlerI {
 		}
 
 		this.addOfferedInterface(RequestNotificationI.class);
-		this.rnip = new RequestNotificationInboundPort(requestNotificationInboundPort, this);
+		this.rnip = new RequestNotificationInboundPort(
+				requestNotificationInboundPort, this);
 		this.addPort(rnip);
 		if(AbstractCVM.isDistributed){
 			this.rnip.publishPort();
@@ -148,7 +177,8 @@ RequestSubmissionHandlerI {
 		}
 
 		this.addOfferedInterface(RequestDispatcherManagerI.class);
-		this.rprmip = new RequestDispatcherManagerInboundPort(repartiteurRequestManagerInboundPort,this);
+		this.rprmip = new RequestDispatcherManagerInboundPort(
+				repartiteurRequestManagerInboundPort,this);
 		this.addPort(rprmip);
 		if(AbstractCVM.isDistributed){
 			this.rprmip.publishPort();
@@ -156,9 +186,33 @@ RequestSubmissionHandlerI {
 			this.rprmip.localPublishPort();
 		}
 
+
+		// sensor port
+
+		
+
+		this.addOfferedInterface(ControlledDataOfferedI.ControlledPullI.class) ;
+		this.rddsip = new RequestDispatcherDynamicStateInboundPort(
+				requestDispatcherDynamiceDataInboundPort, this);
+		this.addPort(rddsip);
+		this.rddsip.publishPort();
+
+
+
 		assert  this.vmsOutboundPort != null && this.rsop != null && this.rnop !=null &&
 				this.rsip != null && this.rnip != null && this.rprmip != null ;
+		assert this.rddsip != null ;
+
 	}
+
+
+	@Override
+	public void start() throws ComponentStartException {
+		// TODO Auto-generated method stub
+		super.start();
+
+	}
+
 
 	@Override
 	public void shutdown() throws ComponentShutdownException {
@@ -186,6 +240,7 @@ RequestSubmissionHandlerI {
 	@Override
 	public void acceptRequestSubmission(RequestI r) throws Exception {
 		this.rsop.submitRequest(r);
+
 	}
 
 	/**
@@ -194,6 +249,10 @@ RequestSubmissionHandlerI {
 	@Override
 	public void acceptRequestSubmissionAndNotify(RequestI r) throws Exception {
 		assert r != null ;
+		if(this.rddsip.connected()){
+			long time=System.currentTimeMillis();
+			debutReq.put(r.getRequestURI(), time);
+		}
 		this.logMessage("RequestDispatcher "+this.dispatcherURI+
 				" submitting request "+r.getRequestURI()+
 				" at " +TimeProcessing.toString(System.currentTimeMillis()) +
@@ -207,8 +266,22 @@ RequestSubmissionHandlerI {
 	@Override
 	public void acceptRequestTerminationNotification(RequestI r) throws Exception {
 		assert	r != null ;
+		
+		if(this.rddsip.connected()){
+			finReq =System.currentTimeMillis();
+			long timeRequest =finReq - debutReq.get(r.getRequestURI());
+			System.out.println("temps : "+debutReq.get(r.getRequestURI())+" + "+finReq+" = "+timeRequest);
+			debutReq.remove(r.getRequestURI());
+			dataTimes.add(new RequestDispatcherDynamicState(dispatcherURI, timeRequest));
+			this.startLimitedPushing(1, 1);
+		}
 		this.logMessage("RequestDispatcher " + this.dispatcherURI +
 				" is notified that request "+ r.getRequestURI() + " has ended.") ;
+
+
+		
+		
+
 		this.rnop.notifyRequestTermination(r);
 	}
 
@@ -233,6 +306,7 @@ RequestSubmissionHandlerI {
 
 		assert	r != null ;
 
+
 		if(this.vmsOutboundPort.size()!=0){
 			vmNumero= (vmNumero+1)%vmsOutboundPort.size();
 			RequestSubmissionOutboundPort rsopi = (RequestSubmissionOutboundPort) 
@@ -240,20 +314,8 @@ RequestSubmissionHandlerI {
 			rsopi.submitRequestAndNotify(r);
 		}else{
 			assert rsop.connected();
-			this.rsop.submitRequestAndNotify(r);
+			//this.rsop.submitRequestAndNotify(r);
 		}
-		final RequestDispatcher rp = this ;
-		final RequestI rq =r ;
-		this.scheduleTask(new ComponentTask() {
-			@Override
-			public void run() {
-				try {
-					rp.startRepartition(rq);
-				} catch (Exception e) {
-					throw new RuntimeException(e);
-				}
-			}
-		},10000, TimeUnit.MILLISECONDS);
 	}
 
 	/**
@@ -370,6 +432,133 @@ RequestSubmissionHandlerI {
 			}	
 		}	
 	}
+
+
+	// -------------------------------------------------------------------------
+	// Component Sensor services
+	// -------------------------------------------------------------------------
+
+	//***************************
+
+	public RequestDispatcherDynamicStateI getDynamicState() {
+
+		return dataTimes.poll();
+	}
+
+	public void			sendDynamicState() throws Exception
+	{
+
+		if (this.rddsip.connected()) {
+
+			RequestDispatcherDynamicStateI cds = this.getDynamicState() ;
+			this.rddsip.send(cds);
+		}
+	}
+
+//	public void			sendDynamicState(
+//			final int interval,
+//			int numberOfRemainingPushes
+//			) throws Exception
+//	{
+//
+//		//this.sendDynamicState();
+//		final int fNumberOfRemainingPushes = numberOfRemainingPushes - 1 ;
+//		if (fNumberOfRemainingPushes > 0) {
+//			final RequestDispatcher rd = this ;
+//			this.pushingFuture =
+//					this.scheduleTask(
+//							new ComponentI.ComponentTask() {
+//								@Override
+//								public void run() {
+//									try {
+//										rd.sendDynamicState(
+//												interval,
+//												fNumberOfRemainingPushes) ;
+//									} catch (Exception e) {
+//										throw new RuntimeException(e) ;
+//									}
+//								}
+//							}, interval, TimeUnit.MILLISECONDS) ;
+//		}
+//	}
+
+
+	//****************************
+
+
+	public String		getDispatcherURI(){
+		return this.dispatcherURI;
+	}
+
+	public long   getTimeRequest(){
+		return 100;
+	}
+
+
+	@Override
+	public void startUnlimitedPushing(int interval) throws Exception {
+		this.logMessage("startUnlimitedPushing");
+
+		// first, send the static state if the corresponding port is connected
+		this.sendDynamicState() ;
+
+		final RequestDispatcher rd = this ;
+		this.pushingFuture =
+				this.scheduleTaskAtFixedRate(
+						new ComponentI.ComponentTask() {
+							@Override
+							public void run() {
+								try {
+									rd.sendDynamicState() ;
+								} catch (Exception e) {
+									throw new RuntimeException(e) ;
+								}
+							}
+						}, interval, interval, TimeUnit.MILLISECONDS) ;
+
+	}
+
+
+	@Override
+	public void startLimitedPushing(final int interval,final  int n) throws Exception {
+
+		assert	n > 0 ;
+
+		this.logMessage(this.dispatcherURI + " startLimitedPushing with interval "
+				+ interval + " ms for " + n + " times.") ;
+
+		// first, send the static state if the corresponding port is connected
+		//this.sendStaticState() ;
+		
+		final RequestDispatcher rd = this ;
+		this.pushingFuture =
+				this.scheduleTask(
+						new ComponentI.ComponentTask() {
+							@Override
+							public void run() {
+								
+									//rd.sendDynamicState(interval, n) ;
+								try {
+									rd.sendDynamicState();
+								} catch (Exception e) {
+									// TODO Auto-generated catch block
+									e.printStackTrace();
+								}
+								
+							}
+						}, interval, TimeUnit.MILLISECONDS) ;
+
+
+	}
+
+
+	@Override
+	public void stopPushing() throws Exception {
+		this.logMessage("stopPushing");
+
+	}
+
+
 
 
 }

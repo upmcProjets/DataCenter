@@ -151,7 +151,8 @@ extends AbstractDistributedCVM {
 							RepartiteurNotificationInboundPortURI,
 							RepartiteurSubmissionOutboundPortURI,
 							RepartiteurNotificationOutboundPortURI,
-							RepartiteurRequestManagementInboundPortURI);
+							"gffdgd",
+							RepartiteurRequestManagementInboundPortURI,"rdddip");
 			this.deployedComponents.add(rep);		
 			rep.toggleLogging();
 			rep.toggleTracing();
