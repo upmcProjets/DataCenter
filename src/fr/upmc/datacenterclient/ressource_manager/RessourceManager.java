@@ -147,6 +147,7 @@ public class RessourceManager extends AbstractComponent implements ComputerState
         }
         throw new Exception("the requested core count is currently unavailable");
     }
+    
     public boolean canCreateVM(int coreCount){
         for(String computerUri : computersDynamicState.keySet()){
             int freeCoreCount = 0;

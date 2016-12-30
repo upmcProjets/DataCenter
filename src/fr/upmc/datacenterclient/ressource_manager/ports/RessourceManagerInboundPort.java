@@ -45,7 +45,7 @@ public class RessourceManagerInboundPort extends AbstractInboundPort implements 
     }
 
     @Override
-    public Boolean canCreateVM(final int coreCount) throws Exception {
+    public boolean canCreateVM(final int coreCount) throws Exception {
         final RessourceManager manager = (RessourceManager)this.owner;
         return this.owner.handleRequestSync(new ComponentI.ComponentService<Boolean>(){
             @Override
@@ -56,7 +56,7 @@ public class RessourceManagerInboundPort extends AbstractInboundPort implements 
     }
 
     @Override
-    public Boolean canHandleApplication(final int vmCount, final int coreCountPerVm) throws Exception {
+    public boolean canHandleApplication(final int vmCount, final int coreCountPerVm) throws Exception {
         final RessourceManager manager = (RessourceManager)this.owner;
         return this.owner.handleRequestSync(new ComponentI.ComponentService<Boolean>(){
             @Override

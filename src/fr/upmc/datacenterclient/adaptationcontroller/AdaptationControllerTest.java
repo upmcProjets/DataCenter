@@ -200,7 +200,6 @@ extends AbstractCVM {
 		
 		this.sddop = (SensorDynamicDataOutboundPort) ac.
 				findPortFromURI(SensorDynamicDataOutboundPortURI);
-		System.out.println("##### : "+sddop);
 		this.sddop.doConnection(SensorDynamicDataInboundPortURI, 
 				DataConnector.class.getCanonicalName());
 		
@@ -242,9 +241,6 @@ extends AbstractCVM {
 				RequestGeneratorManagementInboundPortURI,
 				RequestGeneratorManagementConnector.class.getCanonicalName()) ;
 
-		
-				
-		
 		super.deploy();
 	}
 
@@ -259,7 +255,6 @@ extends AbstractCVM {
 		
 
 		this.avmPort1.allocateCores(ac1);
-
 
 		String inBoundPortDispatcher1 = rprmop.ajouterVM(RequestSubmissionInboundPortURI1);
 		RequestNotificationOutboundPort rpnop1 =(RequestNotificationOutboundPort) 
@@ -286,33 +281,21 @@ extends AbstractCVM {
 	public void	testScenario() throws Exception
 	{
 	
-		// start the request generation in the request generator.
-		this.rgmop.startGeneration() ;
-		
-		
-		//assert !this.rddsop.connected();
-		// wait 20 seconds
-	
 
+		this.rgmop.startGeneration() ;
 		Thread.sleep(20000L);
-		// then stop the generation.
 		this.rgmop.stopGeneration() ;
 	}
 
 	public static void	main(String[] args)
 	{
-		// Uncomment next line to execute components in debug mode.
-		// AbstractCVM.toggleDebugMode() ;
 		try {
 			final AdaptationControllerTest trg = new AdaptationControllerTest() ;
-			// Deploy the components
+		
 			trg.deploy() ;
 			System.out.println("starting...") ;
-		
-			// Start them.
+
 			trg.start() ;
-			// Execute the chosen request generation test scenario in a
-			// separate thread.
 			new Thread(new Runnable() {
 				@Override
 				public void run() {
@@ -323,13 +306,10 @@ extends AbstractCVM {
 					}
 				}
 			}).start() ;
-			// Sleep to let the test scenario execute to completion.
 			Thread.sleep(90000L) ;
-			// Shut down the application.
 			System.out.println("shutting down...") ;
 			trg.shutdown() ;
 			System.out.println("ending...") ;
-			// Exit from Java.
 			System.exit(0) ;
 		} catch (Exception e) {
 			throw new RuntimeException(e) ;

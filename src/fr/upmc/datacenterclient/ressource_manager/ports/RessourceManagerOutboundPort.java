@@ -31,12 +31,12 @@ public class RessourceManagerOutboundPort extends AbstractOutboundPort implement
     }
 
     @Override
-    public Boolean canCreateVM(int coreCount) throws Exception {
+    public boolean canCreateVM(int coreCount) throws Exception {
         return ((RessourceManager)this.connector).canCreateVM(coreCount);
     }
 
     @Override
-    public Boolean canHandleApplication(int vmCount, int coreCountPerVm) throws Exception {
+    public boolean canHandleApplication(int vmCount, int coreCountPerVm) throws Exception {
         return ((RessourceManager)this.connector).canHandleApplication(vmCount, coreCountPerVm);
     }
 

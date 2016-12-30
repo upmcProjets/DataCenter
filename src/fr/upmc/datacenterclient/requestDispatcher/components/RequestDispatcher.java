@@ -222,10 +222,10 @@ PushModeControllerI{
 				}
 			}
 			if(this.rnop.connected()){
-				this.rnop.doDisconnection();	
+				//this.rnop.doDisconnection();	
 			}
 			if(this.rsop.connected()){
-				this.rsop.doDisconnection();	
+				//this.rsop.doDisconnection();	
 			}	
 		} catch (Exception e) {
 			throw new ComponentShutdownException(e);

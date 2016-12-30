@@ -88,6 +88,8 @@ implements RequestDispatcherSensorConsumerI {
 		System.out.println("AC recieve temps moyen : "+
 				currentDynamicData.getMeanTime()+ " from : "+
 				currentDynamicData.getSensorUri());
+		
+		
 
 	}
 

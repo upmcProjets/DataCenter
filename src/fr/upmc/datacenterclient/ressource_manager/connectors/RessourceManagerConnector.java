@@ -19,12 +19,12 @@ public class RessourceManagerConnector extends AbstractConnector implements Ress
     }
 
     @Override
-    public Boolean canCreateVM(int coreCount) throws Exception {
+    public boolean canCreateVM(int coreCount) throws Exception {
         return ((RessourceManagerI)this.offering).canCreateVM(coreCount);
     }
 
     @Override
-    public Boolean canHandleApplication(int vmCount, int coreCountPerVm) throws Exception {
+    public boolean canHandleApplication(int vmCount, int coreCountPerVm) throws Exception {
         return ((RessourceManagerI)this.offering).canHandleApplication(vmCount, coreCountPerVm);
     }
 
