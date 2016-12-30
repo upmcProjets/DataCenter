@@ -63,27 +63,26 @@ RequestSubmissionHandlerI,
 PushModeControllerI{
 
 
-	protected final String  dispatcherURI ;
-	protected RequestSubmissionInboundPort      rsip ;
-	protected RequestSubmissionOutboundPort		rsop ;
-	protected RequestNotificationInboundPort	rnip ;
-	protected RequestNotificationOutboundPort   rnop ;
-	//protected RequestDispatcherSensorInboundPort rdddip ;
-	protected RequestDispatcherManagerInboundPort rprmip ;
-
-	// port pour le sensor
-	
-	protected RequestDispatcherDynamicStateInboundPort    rddsip ;
-
-	protected Map<String,Long> debutReq;
-	protected long finReq;
-	protected ScheduledFuture<?>		pushingFuture ;
-	protected boolean active ;
+	protected final String  								dispatcherURI ;
+	protected RequestSubmissionInboundPort      			rsip ;
+	protected RequestSubmissionOutboundPort					rsop ;
+	protected RequestNotificationInboundPort				rnip ;
+	protected RequestNotificationOutboundPort   			rnop ;
+	protected RequestDispatcherManagerInboundPort 			rprmip ;
+	protected RequestDispatcherDynamicStateInboundPort    	rddsip ;
 
 	//Structure pour gerer les vm allouer
-	protected Map<String,RequestSubmissionOutboundPort> vmsOutboundPort ;
-	protected Queue<RequestDispatcherDynamicState> dataTimes ;
-	protected int vmNumero ;
+	protected Map<String,RequestSubmissionOutboundPort> 	vmsOutboundPort ;
+	protected Queue<RequestDispatcherDynamicState> 			dataTimes ;
+	protected int 											vmNumero ;
+
+
+	protected Map<String,Long>				 				debutReq;
+	protected long 											finReq;
+	protected ScheduledFuture<?>							pushingFuture ;
+	protected boolean 										active ;
+
+
 
 	/**
 	 * cree le composant <code>RequestDispatcher</code>.
@@ -189,7 +188,7 @@ PushModeControllerI{
 
 		// sensor port
 
-		
+
 
 		this.addOfferedInterface(ControlledDataOfferedI.ControlledPullI.class) ;
 		this.rddsip = new RequestDispatcherDynamicStateInboundPort(
@@ -266,11 +265,10 @@ PushModeControllerI{
 	@Override
 	public void acceptRequestTerminationNotification(RequestI r) throws Exception {
 		assert	r != null ;
-		
+
 		if(this.rddsip.connected()){
 			finReq =System.currentTimeMillis();
 			long timeRequest =finReq - debutReq.get(r.getRequestURI());
-			System.out.println("temps : "+debutReq.get(r.getRequestURI())+" + "+finReq+" = "+timeRequest);
 			debutReq.remove(r.getRequestURI());
 			dataTimes.add(new RequestDispatcherDynamicState(dispatcherURI, timeRequest));
 			this.startLimitedPushing(1, 1);
@@ -279,8 +277,8 @@ PushModeControllerI{
 				" is notified that request "+ r.getRequestURI() + " has ended.") ;
 
 
-		
-		
+
+
 
 		this.rnop.notifyRequestTermination(r);
 	}
@@ -314,7 +312,6 @@ PushModeControllerI{
 			rsopi.submitRequestAndNotify(r);
 		}else{
 			assert rsop.connected();
-			//this.rsop.submitRequestAndNotify(r);
 		}
 	}
 
@@ -438,8 +435,6 @@ PushModeControllerI{
 	// Component Sensor services
 	// -------------------------------------------------------------------------
 
-	//***************************
-
 	public RequestDispatcherDynamicStateI getDynamicState() {
 
 		return dataTimes.poll();
@@ -455,36 +450,6 @@ PushModeControllerI{
 		}
 	}
 
-//	public void			sendDynamicState(
-//			final int interval,
-//			int numberOfRemainingPushes
-//			) throws Exception
-//	{
-//
-//		//this.sendDynamicState();
-//		final int fNumberOfRemainingPushes = numberOfRemainingPushes - 1 ;
-//		if (fNumberOfRemainingPushes > 0) {
-//			final RequestDispatcher rd = this ;
-//			this.pushingFuture =
-//					this.scheduleTask(
-//							new ComponentI.ComponentTask() {
-//								@Override
-//								public void run() {
-//									try {
-//										rd.sendDynamicState(
-//												interval,
-//												fNumberOfRemainingPushes) ;
-//									} catch (Exception e) {
-//										throw new RuntimeException(e) ;
-//									}
-//								}
-//							}, interval, TimeUnit.MILLISECONDS) ;
-//		}
-//	}
-
-
-	//****************************
-
 
 	public String		getDispatcherURI(){
 		return this.dispatcherURI;
@@ -497,25 +462,7 @@ PushModeControllerI{
 
 	@Override
 	public void startUnlimitedPushing(int interval) throws Exception {
-		this.logMessage("startUnlimitedPushing");
-
-		// first, send the static state if the corresponding port is connected
-		this.sendDynamicState() ;
-
-		final RequestDispatcher rd = this ;
-		this.pushingFuture =
-				this.scheduleTaskAtFixedRate(
-						new ComponentI.ComponentTask() {
-							@Override
-							public void run() {
-								try {
-									rd.sendDynamicState() ;
-								} catch (Exception e) {
-									throw new RuntimeException(e) ;
-								}
-							}
-						}, interval, interval, TimeUnit.MILLISECONDS) ;
-
+		// le REquest dispatcher n'envoie pas des données en mode UnlimitedPush
 	}
 
 
@@ -523,42 +470,27 @@ PushModeControllerI{
 	public void startLimitedPushing(final int interval,final  int n) throws Exception {
 
 		assert	n > 0 ;
-
 		this.logMessage(this.dispatcherURI + " startLimitedPushing with interval "
 				+ interval + " ms for " + n + " times.") ;
 
-		// first, send the static state if the corresponding port is connected
-		//this.sendStaticState() ;
-		
 		final RequestDispatcher rd = this ;
 		this.pushingFuture =
 				this.scheduleTask(
 						new ComponentI.ComponentTask() {
 							@Override
 							public void run() {
-								
-									//rd.sendDynamicState(interval, n) ;
+
 								try {
 									rd.sendDynamicState();
 								} catch (Exception e) {
-									// TODO Auto-generated catch block
 									e.printStackTrace();
-								}
-								
+								}	
 							}
 						}, interval, TimeUnit.MILLISECONDS) ;
-
-
 	}
-
 
 	@Override
 	public void stopPushing() throws Exception {
 		this.logMessage("stopPushing");
-
 	}
-
-
-
-
 }

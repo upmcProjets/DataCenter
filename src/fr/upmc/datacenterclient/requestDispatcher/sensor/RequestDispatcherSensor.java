@@ -43,7 +43,7 @@ PushModeControllerI{
 	private int 					cpt = 0;
 	public  long 					h[] ;
 	private  int 					r ;
-	private long 					total;
+	private double 					total;
 
 	public RequestDispatcherSensor(
 			String sensorURI,

@@ -73,8 +73,8 @@ implements RequestDispatcherSensorConsumerI {
 		try {
 
 			this.sddop.doDisconnection();
-			this.camop.doDisconnection();
-			this.vmaop.doDisconnection();
+			//this.camop.doDisconnection();
+			//this.vmaop.doDisconnection();
 
 		} catch (Exception e) {
 			throw new ComponentShutdownException();
