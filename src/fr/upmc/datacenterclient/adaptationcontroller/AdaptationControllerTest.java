@@ -24,7 +24,7 @@ import fr.upmc.datacenterclient.requestDispatcher.components.RequestDispatcher;
 import fr.upmc.datacenterclient.requestDispatcher.connectors.RequestDispatcherManagerConnector;
 import fr.upmc.datacenterclient.requestDispatcher.ports.RequestDispatcherDynamicStateOutboundPort;
 import fr.upmc.datacenterclient.requestDispatcher.ports.RequestDispatcherManagerOutboundPort;
-import fr.upmc.datacenterclient.requestDispatcher.sensor.RequestDispatcherMonitor;
+import fr.upmc.datacenterclient.requestDispatcher.sensor.RequestDispatcherSensor;
 import fr.upmc.datacenterclient.requestDispatcher.sensor.SensorDynamicDataOutboundPort;
 import fr.upmc.datacenterclient.requestgenerator.RequestGenerator;
 import fr.upmc.datacenterclient.requestgenerator.connectors.RequestGeneratorManagementConnector;
@@ -173,7 +173,7 @@ extends AbstractCVM {
 		this.addDeployedComponent(rep);		
 		
 		
-		RequestDispatcherMonitor rdm = new RequestDispatcherMonitor(
+		RequestDispatcherSensor rdm = new RequestDispatcherSensor(
 				"rdmm", true,
 				SensorDynamicDataInboundPortURI,
 				RequestDispatcherDynamiceDataOutboundPort);

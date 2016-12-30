@@ -16,6 +16,6 @@ extends DataOfferedI.DataI,
 	
 	public String getSensorUri();
 	
-	public long getMeanTime();
+	public double getMeanTime();
 
 }

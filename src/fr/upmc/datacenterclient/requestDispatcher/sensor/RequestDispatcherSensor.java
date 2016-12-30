@@ -1,6 +1,3 @@
-/**
- * 
- */
 package fr.upmc.datacenterclient.requestDispatcher.sensor;
 
 import java.util.concurrent.ScheduledFuture;
@@ -21,40 +18,58 @@ import fr.upmc.datacenterclient.requestDispatcher.ports.RequestDispatcherDynamic
  * @author chelbi
  *
  */
-public class RequestDispatcherMonitor 
+public class RequestDispatcherSensor 
 extends AbstractComponent 
 implements RequestDispatcherDataConsumerI,
 PushModeControllerI{
+
+
+	// -------------------------------------------------------------------------
+	// Component Variables declaration Constructor
+	// -------------------------------------------------------------------------
+
 
 	protected boolean										active ;
 	protected RequestDispatcherDynamicStateOutboundPort    	rddsop ;
 	protected SensorDynamicDataInboundPort					sddip ;
 
 	protected String 										sensorURI ;
-	protected long											meanTime ;
+	protected double										meanTime ;
+	protected long 											timeRequest;
 	protected ScheduledFuture<?>							pushingFuture;
 
-	// -------------------------------------------------------------------------
-	// Component Constructor
-	// -------------------------------------------------------------------------
+	//variable pour fonctions utils
+	private static int 				w = 10;
+	private int 					cpt = 0;
+	public  long 					h[] ;
+	private  int 					r ;
+	private long 					total;
 
-	public RequestDispatcherMonitor(
-			String dispatcherURI,
+	public RequestDispatcherSensor(
+			String sensorURI,
 			boolean active,
 			String sensorDynamicDataInboundPort,
 			String requestdispatcherDynamicStateDataOutboundPortURI
 			)throws Exception {
 		super(1,0);
+
 		this.active = active ;
-		this.sensorURI = dispatcherURI;
+		this.sensorURI = sensorURI;
 		this.pushingFuture = null ;
+		this.timeRequest=0;
+
 		this.meanTime = 0;
+		r= 0;
+		total = 0;
+		h = new long[w];
+		for(int i=1;i<w; i++) h[i]=0;
 
 		this.addRequiredInterface(ControlledDataRequiredI.ControlledPullI.class) ;
-		this.rddsop = new RequestDispatcherDynamicStateOutboundPort(requestdispatcherDynamicStateDataOutboundPortURI, this, dispatcherURI);
+		this.rddsop = new RequestDispatcherDynamicStateOutboundPort(
+				requestdispatcherDynamicStateDataOutboundPortURI,
+				this, sensorURI);
 		this.addPort(rddsop);
 		this.rddsop.publishPort();
-		System.out.println("sensor"+rddsop.getPortURI());
 
 		this.addOfferedInterface(ControlledDataOfferedI.ControlledPullI.class) ;
 		this.sddip = new SensorDynamicDataInboundPort(sensorDynamicDataInboundPort, this);
@@ -64,19 +79,9 @@ PushModeControllerI{
 		assert this.rddsop != null  ;
 	}
 
-
 	@Override
 	public void start() throws ComponentStartException {
-
 		super.start();
-		try {
-			//this.rddsop.startLimitedPushing(1, 1);
-			this.logMessage("call to start");
-		} catch (Exception e) {
-			throw new ComponentStartException(
-					"Unable to start the pushing of dynamic data from"
-							+ " the comoter component.", e) ;
-		}
 	}
 
 	/**
@@ -84,31 +89,28 @@ PushModeControllerI{
 	 */
 	@Override
 	public void shutdown() throws ComponentShutdownException {
-
 		super.shutdown();
 	}
-
-
-
+	
+	//** Component Methods for Recieving data from RequestDispatcher         **
 	/**
 	 *  @see fr.upmc.datacenterclient.requestDispatcher.interfaces.RequestDispatcherDataConsumerI#acceptRequestDispatcherDynamicData(java.lang.String, fr.upmc.datacenterclient.requestDispatcher.interfaces.RequestDispatcherDynamicStateI)
 	 */
 	@Override
-	public void acceptRequestDispatcherDynamicData(String computerURI,
-			RequestDispatcherDynamicStateI currentDynamicState) throws Exception {
+	public void acceptRequestDispatcherDynamicData(
+			String computerURI,
+			RequestDispatcherDynamicStateI currentDynamicState
+	) throws Exception {
 
-		this.meanTime=currentDynamicState.getTimeRequest();
-		System.out.println("Receive : "+currentDynamicState.getDispatcherURI()+" : "+currentDynamicState.getTimeRequest());
+		this.timeRequest=currentDynamicState.getTimeRequest();
+		System.out.println("Sensor Receive time :"+currentDynamicState.getTimeRequest()+
+						   " from : "+currentDynamicState.getDispatcherURI());
 		this.sendDynamicData();
 	}
 
-
-
-
-
-	//methodes pour l'actuator
-
-	public long getMeanTime(){
+	// methodes pour l'actuator
+	
+	public double getMeanTime(){
 		return this.meanTime ;
 	}
 
@@ -117,7 +119,8 @@ PushModeControllerI{
 	}
 
 	public SensorDynamicDataI getDynamicData(){
-		return new SensorDynamicData(this.getSensorURI(), this.getMeanTime());
+		double t = winnowing(this.timeRequest);
+		return new SensorDynamicData(this.getSensorURI(), t);
 	}
 
 	public void sendDynamicData() throws Exception{
@@ -132,8 +135,7 @@ PushModeControllerI{
 
 	@Override
 	public void startUnlimitedPushing(int interval) throws Exception {
-		// TODO Auto-generated method stub
-
+		
 	}
 
 	@Override
@@ -143,10 +145,7 @@ PushModeControllerI{
 		this.logMessage(this.sensorURI + " startLimitedPushing with interval "
 				+ interval + " ms for " + n + " times.") ;
 
-		// first, send the static state if the corresponding port is connected
-		//this.sendStaticState() ;
-
-		final RequestDispatcherMonitor rd = this ;
+		final RequestDispatcherSensor rd = this ;
 		this.pushingFuture =
 				this.scheduleTask(
 						new ComponentI.ComponentTask() {
@@ -164,8 +163,26 @@ PushModeControllerI{
 
 	@Override
 	public void stopPushing() throws Exception {
-		// TODO Auto-generated method stub
+		this.active=false ;
 
 	}
 
+	// fonctions utils
+	
+	public  double winnowing(long timeRequest) {
+		long first = h[r];
+		h[r]=timeRequest;
+		double meanTime=0 ;
+		if(cpt<w){
+			cpt++;
+			total +=timeRequest;
+			meanTime = total/cpt;
+			//System.out.println("ppp :"+meanTime);
+		}else{
+			meanTime = (total-first+timeRequest)/w;
+			total -= first;
+		}
+		r=(r+1)%w;
+		return meanTime;
+	}
 }

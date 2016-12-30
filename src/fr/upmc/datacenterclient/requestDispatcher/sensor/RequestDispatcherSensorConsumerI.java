@@ -1,6 +1,3 @@
-/**
- * 
- */
 package fr.upmc.datacenterclient.requestDispatcher.sensor;
 
 /**
@@ -9,9 +6,9 @@ package fr.upmc.datacenterclient.requestDispatcher.sensor;
  */
 public interface RequestDispatcherSensorConsumerI {
 	
-	public void			acceptRequestDispatcherDynamicData(
+	public void	 acceptRequestDispatcherDynamicData(
 			String					monitorURI,
 			SensorDynamicDataI	currentDynamicData
-			) throws Exception ;
+	) throws Exception ;
 
 }

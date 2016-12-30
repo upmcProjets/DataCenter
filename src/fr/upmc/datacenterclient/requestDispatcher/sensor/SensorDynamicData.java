@@ -6,7 +6,7 @@ implements SensorDynamicDataI {
 	
 	private static final long serialVersionUID = -1737921338555249506L;
 	protected String sensorURI;
-	protected long meanTime ;
+	protected double meanTime ;
 	
 	
 	
@@ -15,7 +15,7 @@ implements SensorDynamicDataI {
 	 * @param sensorURI
 	 * @param meanTime
 	 */
-	public SensorDynamicData(String sensorURI, long meanTime) {
+	public SensorDynamicData(String sensorURI, double meanTime) {
 		super();
 		this.sensorURI = sensorURI;
 		this.meanTime = meanTime;
@@ -28,7 +28,7 @@ implements SensorDynamicDataI {
 	}
 
 	@Override
-	public long getMeanTime() {
+	public double getMeanTime() {
 		
 		return this.meanTime;
 	}

@@ -165,7 +165,7 @@ extends AbstractCVM {
 		this.addDeployedComponent(rep);		
 		
 		
-		RequestDispatcherMonitor rdm = new RequestDispatcherMonitor(
+		RequestDispatcherSensor rdm = new RequestDispatcherSensor(
 				"rdmm", true,"sens",
 				RequestDispatcherDynamiceDataOutboundPort);
 		rdm.toggleLogging();

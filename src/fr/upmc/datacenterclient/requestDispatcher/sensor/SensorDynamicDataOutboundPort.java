@@ -11,18 +11,18 @@ extends AbstractControlledDataOutboundPort {
 	 * 
 	 */
 	private static final long serialVersionUID = 5130150600553941540L;
-	protected String sensorURI ;
-	
-	
+	protected String portURI ;
+
+
 	/**
 	 * @param owner
 	 * @throws Exception
 	 */
 	public SensorDynamicDataOutboundPort( 
 			ComponentI owner,
-			String sensorURI) throws Exception {
+			String portURI) throws Exception {
 		super(owner);
-		this.sensorURI = sensorURI;
+		this.portURI = portURI;
 	}
 
 
@@ -31,16 +31,20 @@ extends AbstractControlledDataOutboundPort {
 	 * @param owner
 	 * @throws Exception
 	 */
-	public SensorDynamicDataOutboundPort(String uri, ComponentI owner,String sensorURI) throws Exception {
+	public SensorDynamicDataOutboundPort(
+			String uri, 
+			ComponentI owner,
+			String sensorURI
+			) throws Exception {
 		super(uri, owner);
-		this.sensorURI = sensorURI;
+		this.portURI = sensorURI;
 	}
 
 
 	@Override
 	public void receive(DataI d) throws Exception {
 		((RequestDispatcherSensorConsumerI) this.owner).
-			acceptRequestDispatcherDynamicData(sensorURI, (SensorDynamicDataI)d);
+		acceptRequestDispatcherDynamicData(portURI, (SensorDynamicDataI)d);
 
 	}
 
