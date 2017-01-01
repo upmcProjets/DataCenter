@@ -28,9 +28,9 @@ import fr.upmc.datacenter.software.connectors.RequestNotificationConnector;
 import fr.upmc.datacenter.software.connectors.RequestSubmissionConnector;
 import fr.upmc.datacenter.software.ports.RequestNotificationOutboundPort;
 import fr.upmc.datacenter.software.ports.RequestSubmissionOutboundPort;
-import fr.upmc.datacenterclient.computerActuator.ComputerActuator;
-import fr.upmc.datacenterclient.computerActuator.connectors.ComputerActuatorManagerConnector;
-import fr.upmc.datacenterclient.computerActuator.ports.ComputerActuatorManagerOutboundPort;
+import fr.upmc.datacenterclient.actuator.Actuator;
+import fr.upmc.datacenterclient.actuator.connectors.ActuatorConnector;
+import fr.upmc.datacenterclient.actuator.ports.ActuatorManagerOutboundPort;
 import fr.upmc.datacenterclient.requestDispatcher.components.RequestDispatcher;
 import fr.upmc.datacenterclient.requestDispatcher.connectors.RequestDispatcherManagerConnector;
 import fr.upmc.datacenterclient.requestDispatcher.ports.RequestDispatcherManagerOutboundPort;
@@ -101,7 +101,7 @@ public class TestRequestDispatcherCore extends AbstractCVM implements	ProcessorS
 	
 	protected RequestDispatcherManagerOutboundPort rprmop;
 	
-	protected ComputerActuatorManagerOutboundPort camop;
+	protected ActuatorManagerOutboundPort camop;
 
 	public static String computerURI;
 	/**
@@ -224,17 +224,18 @@ public class TestRequestDispatcherCore extends AbstractCVM implements	ProcessorS
 
 		
 		// Creating the Computer Actuator
-		ComputerActuator ca = new ComputerActuator("ca",ComputerActuatorManagerInboundPortURI);
+		Actuator ca = new Actuator("ca",ComputerActuatorManagerInboundPortURI,
+				"rmanager",RepartiteurRequestManagementInboundPortURI);
 		this.addDeployedComponent(ca);
 		ca.toggleTracing();
 		ca.toggleLogging();
 		
-		this.camop = new ComputerActuatorManagerOutboundPort(ComputerActuatorManagerOutboundPortURI,
+		this.camop = new ActuatorManagerOutboundPort(ComputerActuatorManagerOutboundPortURI,
 				new AbstractComponent() {
 				});
 		this.camop.publishPort();
 		this.camop.doConnection(ComputerActuatorManagerInboundPortURI,
-				ComputerActuatorManagerConnector.class.getCanonicalName());
+				ActuatorConnector.class.getCanonicalName());
 		
 
 		

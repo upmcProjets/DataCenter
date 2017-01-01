@@ -3,7 +3,6 @@ package fr.upmc.datacenterclient.ressource_manager.ports;
 import fr.upmc.components.ComponentI;
 import fr.upmc.components.ports.AbstractInboundPort;
 import fr.upmc.datacenter.hardware.computers.Computer.AllocatedCore;
-import fr.upmc.datacenterclient.computerActuator.ComputerActuator;
 import fr.upmc.datacenterclient.ressource_manager.RessourceManager;
 import fr.upmc.datacenterclient.ressource_manager.interfaces.RessourceManagerI;
 

@@ -2,14 +2,12 @@ package fr.upmc.datacenterclient.adaptationcontroller;
 
 import fr.upmc.datacenterclient.requestDispatcher.sensor.SensorDynamicDataI;
 import fr.upmc.datacenterclient.requestDispatcher.sensor.SensorDynamicDataOutboundPort;
-import fr.upmc.datacenterclient.vm_actuator.interfaces.VmActuatorI;
-import fr.upmc.datacenterclient.vm_actuator.ports.VmActuatorOutboundPort;
 import fr.upmc.components.AbstractComponent;
 import fr.upmc.components.exceptions.ComponentShutdownException;
 import fr.upmc.components.exceptions.ComponentStartException;
 import fr.upmc.datacenter.interfaces.ControlledDataRequiredI;
-import fr.upmc.datacenterclient.computerActuator.interfaces.ComputerActuatorManagerI;
-import fr.upmc.datacenterclient.computerActuator.ports.ComputerActuatorManagerOutboundPort;
+import fr.upmc.datacenterclient.actuator.interfaces.ActuatorI;
+import fr.upmc.datacenterclient.actuator.ports.ActuatorManagerOutboundPort;
 import fr.upmc.datacenterclient.requestDispatcher.sensor.RequestDispatcherSensorConsumerI;
 
 public class AdaptationController 
@@ -19,8 +17,8 @@ implements RequestDispatcherSensorConsumerI {
 	protected boolean									active ;
 	protected String 									adapControllerURI;
 	protected SensorDynamicDataOutboundPort   			sddop ;
-	protected ComputerActuatorManagerOutboundPort 		camop;
-	protected VmActuatorOutboundPort         			vmaop ;
+	protected ActuatorManagerOutboundPort 		camop;
+	//protected VmActuatorOutboundPort         			vmaop ;
 
 
 	public AdaptationController(
@@ -41,18 +39,14 @@ implements RequestDispatcherSensorConsumerI {
 		this.addPort(sddop);
 		this.sddop.publishPort();
 
-		this.addRequiredInterface(ComputerActuatorManagerI.class);
-		this.camop = new ComputerActuatorManagerOutboundPort(
+		this.addRequiredInterface(ActuatorI.class);
+		this.camop = new ActuatorManagerOutboundPort(
 				computerActuatorManagerOutboundPort, this);
 		this.addPort(camop);
 		this.camop.publishPort();
 
-		this.addRequiredInterface(VmActuatorI.class);
-		this.vmaop = new VmActuatorOutboundPort(vmActuatorOutboundPort, this);
-		this.addPort(vmaop);
-		this.vmaop.publishPort();
-
-		assert this.sddop != null  && this.camop != null && this.vmaop != null;
+		
+		assert this.sddop != null  && this.camop != null ;
 	}
 
 
