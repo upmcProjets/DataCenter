@@ -8,14 +8,13 @@ import fr.upmc.components.connectors.AbstractConnector;
 import fr.upmc.components.exceptions.ComponentShutdownException;
 import fr.upmc.datacenter.software.interfaces.RequestNotificationI;
 import fr.upmc.datacenter.software.ports.RequestNotificationOutboundPort;
+import fr.upmc.datacenterclient.adaptationcontroller.AdaptationController;
 import fr.upmc.datacenterclient.basic_admissionController.interfaces.AdmissionControllerI;
 import fr.upmc.datacenterclient.basic_admissionController.ports.AdmissionControllerInboundPort;
 import fr.upmc.datacenterclient.requestDispatcher.components.RequestDispatcher;
-import fr.upmc.datacenterclient.requestDispatcher.connectors.RequestDispatcherManagerConnector;
 import fr.upmc.datacenterclient.requestDispatcher.interfaces.RequestDispatcherManagerI;
-import fr.upmc.datacenterclient.requestDispatcher.ports.RequestDispatcherManagerOutboundPort;
-import fr.upmc.datacenterclient.ressource_manager.RessourceManager;
-import fr.upmc.datacenterclient.ressource_manager.connectors.RessourceManagerConnector;
+import fr.upmc.datacenterclient.requestDispatcher.ports.RequestDispatcherManagerInboundPort;
+import fr.upmc.datacenterclient.ressource_manager.RessourceManagerConnector;
 import fr.upmc.datacenterclient.ressource_manager.interfaces.RessourceManagerI;
 import fr.upmc.datacenterclient.ressource_manager.ports.RessourceManagerOutboundPort;
 import fr.upmc.datacenterclient.utils.JavassistUtils;
@@ -56,6 +55,9 @@ extends AbstractComponent {
 	public static final String	RepartiteurNotificationInboundPortURI 			= "rpnibp" ;
 	public static final String	RepartiteurRequestManagementInboundPortURI 		= "rprmip" ;
 	public static final String	RepartiteurRequestManagementOutboundPortURI 	= "rprmop" ;
+	public static final String  RequestDispatcherDynamicDataInboundPortURI		= "rdbdip" ;
+	public static final String  SensorDynamicDataOutboundPortURI				= "ssddop" ;
+	public static final String  ActuatorManagerOutboundPortURI					= "aamopu" ;
 
 	/**  Les Port du controlleur  */
 	private AdmissionControllerInboundPort				  acibp;
@@ -156,15 +158,18 @@ extends AbstractComponent {
 				RepartiteurNotificationInboundPortURI+repNum,
 				RepartiteurSubmissionOutboundPortURI+repNum,
 				RepartiteurNotificationOutboundPortURI+repNum,
-				RepartiteurRequestManagementInboundPortURI+repNum,"dfsd","dsfsd");
+				RepartiteurRequestManagementInboundPortURI+repNum,"dfsd",
+				RequestDispatcherDynamicDataInboundPortURI+repNum);
 		rqd.toggleLogging();
 		rqd.toggleTracing();
 		rqd.start();
+		
+	
 
 		/* connexion avec le Request generator */
 		RequestNotificationOutboundPort rdnobp = (RequestNotificationOutboundPort) rqd.
 				findPortFromURI(RepartiteurNotificationOutboundPortURI+repNum);
-		/*rdnobp.doConnection(
+		/*rdnobp.doConnection( // replacé par javassist
 				rgNotificationInboundPort, RequestNotificationConnector.class.getCanonicalName());*/
 
 		HashMap<String, String> methodesNameMap = new HashMap<>();
@@ -182,8 +187,31 @@ extends AbstractComponent {
 		for(int i = 0; i < nbrVm; i++){
 			rmop.createVM(RepartiteurRequestManagementInboundPortURI+repNum, DEFAULT_CORE_COUNT);
 		}
-		repNum = repNum+1;
+		
+		
+		// un port pour cennecter l actuator
+		RequestDispatcherManagerInboundPort rdmipA = new RequestDispatcherManagerInboundPort(rqd);
+		rdmipA.publishPort();
+		
+		// uri du port ressource manager pour l actuator
+		String ressourceManagerPortTOactuator = this.rmop.createServicePort();
+		
+		AdaptationController ac = new AdaptationController(
+				true,
+				"adapControllerURI",
+				SensorDynamicDataOutboundPortURI,
+				ActuatorManagerOutboundPortURI,
+				ressourceManagerPortTOactuator,
+				rdmipA.getPortURI(),
+				RequestDispatcherDynamicDataInboundPortURI+repNum);
+		ac.toggleLogging();
+		ac.toggleTracing();
+		ac.start();
 
+		
+		repNum = repNum+1;
 		return RepartiteurSubmissionInboundPortURI + (repNum - 1) ;
 	}
+	
+	
 }

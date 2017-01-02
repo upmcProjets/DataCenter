@@ -23,6 +23,7 @@ import fr.upmc.datacenter.software.ports.RequestSubmissionOutboundPort;
 import fr.upmc.datacenterclient.requestDispatcher.components.RequestDispatcher;
 import fr.upmc.datacenterclient.requestDispatcher.connectors.RequestDispatcherManagerConnector;
 import fr.upmc.datacenterclient.requestDispatcher.ports.RequestDispatcherDynamicStateOutboundPort;
+import fr.upmc.datacenterclient.requestDispatcher.ports.RequestDispatcherManagerInboundPort;
 import fr.upmc.datacenterclient.requestDispatcher.ports.RequestDispatcherManagerOutboundPort;
 import fr.upmc.datacenterclient.requestDispatcher.sensor.RequestDispatcherSensor;
 import fr.upmc.datacenterclient.requestDispatcher.sensor.SensorDynamicDataOutboundPort;
@@ -142,6 +143,7 @@ extends AbstractCVM {
 				ComputerServicesInboundPortURI,
 				ComputerServicesConnector.class.getCanonicalName()) ;
 
+		
 		// instanciation de la vm 1
 		mv1 =new ApplicationVM("vm1",	
 				ApplicationVMManagementInboundPortURI1,
@@ -172,45 +174,40 @@ extends AbstractCVM {
 		rep.toggleTracing();
 		this.addDeployedComponent(rep);		
 		
-		
-		RequestDispatcherSensor rdm = new RequestDispatcherSensor(
-				"rdmm", true,
-				SensorDynamicDataInboundPortURI,
-				RequestDispatcherDynamiceDataOutboundPort);
-		rdm.toggleLogging();
-		rdm.toggleTracing();
-		this.addDeployedComponent(rdm);
+		// un port pour cennecter l actuator
+		RequestDispatcherManagerInboundPort rdmipA = new RequestDispatcherManagerInboundPort(rep);
+		rdmipA.publishPort();
 		
 		
-		this.rddsop = (RequestDispatcherDynamicStateOutboundPort) rdm.
-				findPortFromURI(RequestDispatcherDynamiceDataOutboundPort);
-		this.rddsop.doConnection(RequestDispatcherDynamiceDataInboundPort,
-				DataConnector.class.getCanonicalName());
 		
 		
-		AdaptationController ac = new AdaptationController(true,
-						"adapControllerUri",
-						SensorDynamicDataOutboundPortURI,
-						ComputerActuatorManagerOutboundPort,
-						VmActuatorOutboundPort);
-		ac.toggleLogging();
-		ac.toggleTracing();
-		this.addDeployedComponent(ac);
 		
+	
+//		AdaptationController ac = new AdaptationController(true,
+//						"adapControllerUri",
+//						SensorDynamicDataOutboundPortURI,
+//						ComputerActuatorManagerOutboundPort,
+//						VmActuatorOutboundPort);
+//		ac.toggleLogging();
+//		ac.toggleTracing();
+//		this.addDeployedComponent(ac);
+//		
+//		
+//		this.sddop = (SensorDynamicDataOutboundPort) ac.
+//				findPortFromURI(SensorDynamicDataOutboundPortURI);
+//		this.sddop.doConnection(SensorDynamicDataInboundPortURI, 
+//				DataConnector.class.getCanonicalName());
+//		
+//		this.rprmop= new RequestDispatcherManagerOutboundPort(
+//				RepartiteurRequestManagementOutboundPortURI,
+//				new AbstractComponent() {});
+//		this.rprmop.publishPort();
+//		this.rprmop.doConnection(
+//				RepartiteurRequestManagementInboundPortURI,
+//				RequestDispatcherManagerConnector.class.getCanonicalName());
+//
+//		
 		
-		this.sddop = (SensorDynamicDataOutboundPort) ac.
-				findPortFromURI(SensorDynamicDataOutboundPortURI);
-		this.sddop.doConnection(SensorDynamicDataInboundPortURI, 
-				DataConnector.class.getCanonicalName());
-		
-		this.rprmop= new RequestDispatcherManagerOutboundPort(
-				RepartiteurRequestManagementOutboundPortURI,
-				new AbstractComponent() {});
-		this.rprmop.publishPort();
-		this.rprmop.doConnection(
-				RepartiteurRequestManagementInboundPortURI,
-				RequestDispatcherManagerConnector.class.getCanonicalName());
-
 		// Creating the request generator component.
 		RequestGenerator rg =
 				new RequestGenerator(

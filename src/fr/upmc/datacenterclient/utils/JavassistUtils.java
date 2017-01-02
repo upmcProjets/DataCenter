@@ -23,7 +23,7 @@ public class JavassistUtils {
 
         CtClass cs = pool.get(connectorSuperclass.getCanonicalName()) ;
         CtClass cii = pool.get(connectorImplementedInterface.getCanonicalName()) ;
-        CtClass oi = pool.get(offeredInterface.getCanonicalName()) ;
+        //CtClass oi = pool.get(offeredInterface.getCanonicalName()) ;
         CtClass connectorCtClass = pool.makeClass(connectorCanonicalClassName) ;
         connectorCtClass.setSuperclass(cs) ;
         Method[] methodsToImplement = connectorImplementedInterface.getDeclaredMethods() ;

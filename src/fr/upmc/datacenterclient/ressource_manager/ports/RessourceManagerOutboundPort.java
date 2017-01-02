@@ -2,7 +2,7 @@ package fr.upmc.datacenterclient.ressource_manager.ports;
 
 import fr.upmc.components.ComponentI;
 import fr.upmc.components.ports.AbstractOutboundPort;
-import fr.upmc.datacenter.hardware.computers.Computer.AllocatedCore;
+import fr.upmc.datacenter.hardware.computers.Computer;
 import fr.upmc.datacenterclient.ressource_manager.RessourceManager;
 import fr.upmc.datacenterclient.ressource_manager.interfaces.RessourceManagerI;
 
@@ -21,8 +21,8 @@ public class RessourceManagerOutboundPort extends AbstractOutboundPort implement
     }
 
     @Override
-    public String createVM(String requestDispacherManamentOutBoundPortUri, int coreCount) throws Exception {
-        return ((RessourceManagerI)this.connector).createVM(requestDispacherManamentOutBoundPortUri, coreCount);
+    public String createVM(String requestDispacherManamentInBoundPortUri, int coreCount) throws Exception {
+        return ((RessourceManagerI)this.connector).createVM(requestDispacherManamentInBoundPortUri, coreCount);
     }
 
     @Override
@@ -31,24 +31,32 @@ public class RessourceManagerOutboundPort extends AbstractOutboundPort implement
     }
 
     @Override
-    public boolean canCreateVM(int coreCount) throws Exception {
+    public Boolean canCreateVM(int coreCount) throws Exception {
         return ((RessourceManager)this.connector).canCreateVM(coreCount);
     }
 
     @Override
-    public boolean canHandleApplication(int vmCount, int coreCountPerVm) throws Exception {
-        return ((RessourceManager)this.connector).canHandleApplication(vmCount, coreCountPerVm);
+    public Boolean canHandleApplication(int vmCount, int coreCountPerVm) throws Exception {
+        return ((RessourceManagerI)this.connector).canHandleApplication(vmCount, coreCountPerVm);
+    }
+    @Override
+    public Computer.AllocatedCore[] getAllocatedCores(String vmsipURI) throws Exception {
+        return ((RessourceManagerI)this.connector).getAllocatedCores(vmsipURI);
+
     }
 
-	@Override
-	public AllocatedCore[] getAllocatedCores(String vmmipURI) throws Exception {
-		return ((RessourceManager)this.connector).getAllocatedCores(vmmipURI);
-		   
-	}
+    @Override
+    public void updateVMCoresNumber(String vmmipURI, int coreCount) throws Exception {
+        ((RessourceManagerI)this.connector).updateVMCoresNumber(vmmipURI, coreCount);
+    }
 
-	@Override
-	public void updateVMCoresNumber(String vmmipURI, int coreCount) throws Exception {
-		((RessourceManager)this.connector).updateVMCoresNumber(vmmipURI, coreCount);
-		   
-	}
+    @Override
+    public String createServicePort() throws Exception {
+        return ((RessourceManagerI)this.connector).createServicePort();
+    }
+
+    @Override
+    public void removeVM(String rdmipURI, String rsipURI) throws Exception {
+        ((RessourceManagerI)this.connector).removeVM(rdmipURI, rsipURI);
+    }
 }

@@ -24,7 +24,7 @@ import fr.upmc.datacenterclient.actuator.ports.ActuatorManagerInboundPort;
 import fr.upmc.datacenterclient.requestDispatcher.connectors.RequestDispatcherManagerConnector;
 import fr.upmc.datacenterclient.requestDispatcher.interfaces.RequestDispatcherManagerI;
 import fr.upmc.datacenterclient.requestDispatcher.ports.RequestDispatcherManagerOutboundPort;
-import fr.upmc.datacenterclient.ressource_manager.connectors.RessourceManagerConnector;
+import fr.upmc.datacenterclient.ressource_manager.RessourceManagerConnector;
 import fr.upmc.datacenterclient.ressource_manager.interfaces.RessourceManagerI;
 import fr.upmc.datacenterclient.ressource_manager.ports.RessourceManagerOutboundPort;
 
@@ -46,7 +46,7 @@ extends AbstractComponent {
 
 	protected ComputerServicesOutboundPort csPort;
 	protected ApplicationVMManagementOutboundPort avmPort;
-	protected ActuatorManagerInboundPort ca_contrmip;
+	protected ActuatorManagerInboundPort amip;
 	//vm
 	private RessourceManagerOutboundPort rmop;
 	private RequestDispatcherManagerOutboundPort rdmop;
@@ -54,122 +54,61 @@ extends AbstractComponent {
 	Map<String, ArrayList<String>> AppRessources = new HashMap<>();
 
 	public Actuator(String actuatorURI,
-			String ComputerActuatorManagerInboundPortURI,
-			String ressourceManagerInboundPortUri,
-			String requestDispatcherManagerInboundPortUri
+			String actuatorManagerInboundPortURI,
+			String ressourceManagerOutboundPortUri,
+			String requestDispatcherManagerOutboundPortUri
 			) throws Exception {
 		super(1, 1);
 		this.actuatorURI= actuatorURI;
 
 		this.addOfferedInterface(ActuatorI.class);
-		this.ca_contrmip = new ActuatorManagerInboundPort(
-						ComputerActuatorManagerInboundPortURI, this);
-		this.addPort(this.ca_contrmip);
-		this.ca_contrmip.publishPort();
+		this.amip = new ActuatorManagerInboundPort(
+						actuatorManagerInboundPortURI, this);
+		this.addPort(this.amip);
+		this.amip.publishPort();
 
 		//vm
 
-		addRequiredInterface(RessourceManagerI.class);
 		addRequiredInterface(RequestDispatcherManagerI.class);
-
-		rmop = new RessourceManagerOutboundPort(this);
+		rmop = new RessourceManagerOutboundPort(ressourceManagerOutboundPortUri, this);
 		rmop.publishPort();
 		this.addPort(rmop);
-		rmop.doConnection(ressourceManagerInboundPortUri, 
-				RessourceManagerConnector.class.getCanonicalName());
+		//
 
-		rdmop = new RequestDispatcherManagerOutboundPort(this);
+		
+		addRequiredInterface(RessourceManagerI.class);
+		rdmop = new RequestDispatcherManagerOutboundPort(requestDispatcherManagerOutboundPortUri,this);
 		rdmop.publishPort();
 		this.addPort(rdmop);
-		rdmop.doConnection(requestDispatcherManagerInboundPortUri, 
-				RequestDispatcherManagerConnector.class.getCanonicalName());
+		
 
 
-		assert this.ca_contrmip != null;
 	}
 
 
 	
 	// Computer method
 	
-	public void addCore(String computerURI, String vmURI, int nbcore) throws Exception {
+	public void addCore(String vmURI, int nbcore) throws Exception {
 
-		System.out.println("Add cores");
-		
-		this.csPort = new ComputerServicesOutboundPort(new AbstractComponent() {});
-		this.csPort.publishPort();
-		this.csPort.doConnection(computerURI, ComputerServicesConnector.class.getCanonicalName());
-	
-		System.out.println(this.csPort);
-		
-		this.avmPort = (ApplicationVMManagementOutboundPort) findPortFromURI(vmURI);
-	
-		this.avmPort = new ApplicationVMManagementOutboundPort(new AbstractComponent() {});
-		this.avmPort.publishPort();
-		this.avmPort.doConnection(vmURI, ApplicationVMManagementConnector.class.getCanonicalName());
-		System.out.println(this.avmPort);
-		AllocatedCore[] ac = this.csPort.allocateCores(nbcore);
-		System.out.println(" nombre de cores =  " + ac.length);
-		avmPort.allocateCores(ac);
+		System.out.println("Add cores");	
+		this.rmop.updateVMCoresNumber(vmURI, nbcore);
 	}
 
-	public void deleteCore(String computerURI, String vmURI, int nbcore) throws Exception {
+	public void deleteCore(String vmURI, int nbcore) throws Exception {
 
 		System.out.println("Delete cores");
-
-		this.csPort = new ComputerServicesOutboundPort(new AbstractComponent() {});
-		this.csPort.publishPort();
-		this.csPort.doConnection(computerURI, ComputerServicesConnector.class.getCanonicalName());
-
-		System.out.println(this.csPort);
-		// ComputerActuator.this.csPort = (ComputerServicesOutboundPort)
-		// findPortFromURI(computerURI);
-
-		this.avmPort = (ApplicationVMManagementOutboundPort) findPortFromURI(vmURI);
-
-		this.avmPort = new ApplicationVMManagementOutboundPort(new AbstractComponent() {});
-		this.avmPort.publishPort();
-		this.avmPort.doConnection(vmURI, ApplicationVMManagementConnector.class.getCanonicalName());
-		System.out.println(this.avmPort);
-		AllocatedCore[] ac = this.csPort.allocateCores(4 - nbcore);
-		System.out.println(" nombre de cores =  " + ac.length);
-		avmPort.allocateCores(ac);
+		this.rmop.updateVMCoresNumber(vmURI, nbcore);
 
 	}
 
-	public void updateFrequency(String computerURI, int numCore, int frequency) throws Exception {
-		
+	public void updateFrequency(String processorManagementInboundPortURI, int numCore, int frequency) throws Exception {
+		// TODO Auto-generated method stub
+
 		System.out.println("Update frequency cores");
-		
-		this.csPort = new ComputerServicesOutboundPort(new AbstractComponent() {});
-		this.csPort.publishPort();
-		this.csPort.doConnection(computerURI, ComputerServicesConnector.class.getCanonicalName());
-
-		AllocatedCore[] ac = this.csPort.allocateCores(2);
-
-		final String processorServicesInboundPortURI = ac[1].processorInboundPortURI.get(ProcessorPortTypes.SERVICES);
-		final String processorManagementInboundPortURI = ac[1].processorInboundPortURI
-				.get(ProcessorPortTypes.MANAGEMENT);
-
-		// this.avmPort = (ApplicationVMManagementOutboundPort)
-		// findPortFromURI(ApplicationVMManagementInboundPortURI1);
-
-		this.avmPort = new ApplicationVMManagementOutboundPort(new AbstractComponent() {
-		});
-		this.avmPort.publishPort();
-		this.avmPort.doConnection(ApplicationVMManagementInboundPortURI1,
-				ApplicationVMManagementConnector.class.getCanonicalName());
-		System.out.println(this.avmPort);
-
-		System.out.println(" cores allocated " + ac.toString());
-		avmPort.allocateCores(ac);
-
-		ProcessorServicesOutboundPort psPort = new ProcessorServicesOutboundPort(new AbstractComponent() {
-		});
-		psPort.publishPort();
-		psPort.doConnection(processorServicesInboundPortURI, ProcessorServicesConnector.class.getCanonicalName());
-
-		ProcessorManagementOutboundPort pmPort = new ProcessorManagementOutboundPort(new AbstractComponent() {
+	
+		ProcessorManagementOutboundPort pmPort = 
+				new ProcessorManagementOutboundPort(new AbstractComponent() {
 		});
 		pmPort.publishPort();
 		pmPort.doConnection(processorManagementInboundPortURI, ProcessorManagementConnector.class.getCanonicalName());
@@ -184,7 +123,6 @@ extends AbstractComponent {
 		pmPort.unpublishPort();
 
 	}
-
 	//vm methode
 	
 
@@ -207,13 +145,11 @@ extends AbstractComponent {
 		try {
 			this.csPort.doDisconnection();
 		} catch (Exception e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
 		try {
 			this.avmPort.doDisconnection();
 		} catch (Exception e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
 

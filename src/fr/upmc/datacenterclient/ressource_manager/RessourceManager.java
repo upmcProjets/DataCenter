@@ -18,26 +18,29 @@ import fr.upmc.datacenter.software.applicationvm.connectors.ApplicationVMManagem
 import fr.upmc.datacenter.software.applicationvm.ports.ApplicationVMManagementOutboundPort;
 import fr.upmc.datacenter.software.connectors.RequestNotificationConnector;
 import fr.upmc.datacenter.software.ports.RequestNotificationOutboundPort;
+import fr.upmc.datacenterclient.requestDispatcher.components.RequestDispatcher;
 import fr.upmc.datacenterclient.requestDispatcher.connectors.RequestDispatcherManagerConnector;
 import fr.upmc.datacenterclient.requestDispatcher.interfaces.RequestDispatcherManagerI;
 import fr.upmc.datacenterclient.requestDispatcher.ports.RequestDispatcherManagerOutboundPort;
+import fr.upmc.datacenterclient.requestgenerator.connectors.RequestGeneratorManagementConnector;
 import fr.upmc.datacenterclient.ressource_manager.interfaces.RessourceManagerI;
 import fr.upmc.datacenterclient.ressource_manager.ports.RessourceManagerInboundPort;
+import fr.upmc.datacenterclient.ressource_manager.ports.RessourceManagerOutboundPort;
 
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
 /**
- * Created by Hacene on 12/28/2016.
+ * Created by Hacene on 12/30/2016.
  */
 public class RessourceManager extends AbstractComponent implements ComputerStateDataConsumerI {
     private Map<String, ComputerServicesOutboundPort> computers = new HashMap<>();
     private Map<String, ComputerServicesOutboundPort> vmComputer = new HashMap<>();
     private Map<String, Computer.AllocatedCore[]> vmAllocatedCoreMap = new HashMap<>();
-    private Map<String, RequestDispatcherManagerOutboundPort> requestDispachers = new HashMap<>();
     private Map<String, ComputerDynamicStateI> computersDynamicState = new HashMap<>();
     private Map<String, ComputerStaticStateI> computersStaticState = new HashMap<>();
+    private Map<String, String> appVMSubmissionIPToAppVMManIP = new HashMap<>();
     private Map<String, ComputerDynamicStateDataOutboundPort> computerDynamicStateDataOutboundPortMap = new HashMap<>();
 
     private static int vmCount = 0;
@@ -77,7 +80,6 @@ public class RessourceManager extends AbstractComponent implements ComputerState
             throw new Exception("can not create vm with 0 core");
         if(!canCreateVM(coreCount))
             throw new Exception("not enough cores to create vm");
-
         vmCount++;
         ApplicationVM vm = new ApplicationVM(
                 VM_PREFIX + vmCount,
@@ -85,6 +87,7 @@ public class RessourceManager extends AbstractComponent implements ComputerState
                 REQUEST_SUBMISSION_INBOUD_PORT_PREFIX + vmCount,
                 REQUEST_NOTIFICATION_OUTBOUND_PORT + vmCount
         );
+        appVMSubmissionIPToAppVMManIP.put(REQUEST_SUBMISSION_INBOUD_PORT_PREFIX + vmCount, APPLICATION_VM_MANAGMENT_INBOUND_PORT_PREFIX + vmCount);
         vm.toggleTracing();
         vm.toggleLogging();
         vm.start();
@@ -108,6 +111,8 @@ public class RessourceManager extends AbstractComponent implements ComputerState
 
         rpnop.doConnection(requestDispatcherNotificationInboundPort,RequestNotificationConnector.class.getCanonicalName()) ;
         rdmop.doDisconnection();
+        System.out.println("created new VM with " + coreCount + " core to request dispatcher " + rdmipUri
+                + " Total free core count " + freeCoreCount());
         return APPLICATION_VM_MANAGMENT_OUTBOUND_PORT_PREFIX + vmCount;
     }
 
@@ -119,13 +124,13 @@ public class RessourceManager extends AbstractComponent implements ComputerState
     @Override
     public void acceptComputerDynamicData(String computerURI, ComputerDynamicStateI currentDynamicState) throws Exception {
         computersDynamicState.put(computerURI, currentDynamicState);
-        System.out.print(computerURI + " : ");
-        for(boolean ba[] : currentDynamicState.getCurrentCoreReservations()){
-            for(boolean b : ba){
-                System.out.print(b + " ");
-            }
-        }
-        System.out.println();
+//        System.out.print(computerURI + " : ");
+//        for(boolean ba[] : currentDynamicState.getCurrentCoreReservations()){
+//            for(boolean b : ba){
+//                System.out.print(b + " ");
+//            }
+//        }
+//        System.out.println();
     }
 
     private Computer.AllocatedCore[] allocateCores(int requestedNumber, String applicationVMManagementInboundPortURI) throws Exception {
@@ -138,6 +143,7 @@ public class RessourceManager extends AbstractComponent implements ComputerState
                     if(!b) freeCoreCount++;
                     if(freeCoreCount == requestedNumber){
                         Computer.AllocatedCore[] cores = computers.get(computerUri).allocateCores(requestedNumber);
+                        System.out.println("allocating " + cores.length + " to vm " + applicationVMManagementInboundPortURI);
                         vmAllocatedCoreMap.put(applicationVMManagementInboundPortURI, cores);
                         vmComputer.put(applicationVMManagementInboundPortURI, computers.get(computerUri));
                         return cores;
@@ -147,7 +153,6 @@ public class RessourceManager extends AbstractComponent implements ComputerState
         }
         throw new Exception("the requested core count is currently unavailable");
     }
-    
     public boolean canCreateVM(int coreCount){
         for(String computerUri : computersDynamicState.keySet()){
             int freeCoreCount = 0;
@@ -161,6 +166,20 @@ public class RessourceManager extends AbstractComponent implements ComputerState
             }
         }
         return false;
+    }
+
+    public int freeCoreCount(){
+        int coreCount = 0;
+        for(String computerUri : computersDynamicState.keySet()){
+            int freeCoreCount = 0;
+            for(boolean ba[] : computersDynamicState.get(computerUri).getCurrentCoreReservations()){
+                for(boolean b : ba){
+                    if(!b)
+                        coreCount ++;
+                }
+            }
+        }
+        return coreCount;
     }
 
     public boolean canHandleApplication(int vmCount, int coreCountPerVm){
@@ -186,6 +205,7 @@ public class RessourceManager extends AbstractComponent implements ComputerState
         }
         csop.doConnection(csipUri, ComputerServicesConnector.class.getCanonicalName());
         cdsdop.doConnection(cdsdipUri, ControlledDataConnector.class.getCanonicalName());
+        System.out.println("connected computer " + computerURI + " Total free core count : " + freeCoreCount());
 
         computers.put(computerURI, csop);
         computerDynamicStateDataOutboundPortMap.put(computerURI, cdsdop);
@@ -198,7 +218,7 @@ public class RessourceManager extends AbstractComponent implements ComputerState
         for(String key : computers.keySet()){
             ComputerDynamicStateDataOutboundPort cdsdop = computerDynamicStateDataOutboundPortMap.get(key);
             try {
-                cdsdop.startLimitedPushing(1000, 25) ;
+                cdsdop.startLimitedPushing(1, 10000) ;
             } catch (Exception e) {
                 throw new ComponentStartException(
                         "Unable to start the pushing of dynamic data from"
@@ -207,8 +227,19 @@ public class RessourceManager extends AbstractComponent implements ComputerState
         }
     }
 
-    public Computer.AllocatedCore[] getAllocatedCores(String vmmipURI) throws Exception{
-        return vmAllocatedCoreMap.get(vmmipURI);
+    public void removeVM(String rdmipURI, String rsipURI) throws Exception{
+        RequestDispatcherManagerOutboundPort rdmop = new RequestDispatcherManagerOutboundPort(this);
+        rdmop.publishPort();
+        this.addPort(rdmop);
+        rdmop.doConnection(rdmipURI, RequestGeneratorManagementConnector.class.getCanonicalName());
+        rdmop.supprimerVM(rsipURI);
+        rdmop.doDisconnection();
+        vmComputer.remove(appVMSubmissionIPToAppVMManIP.get(rsipURI));
+        vmAllocatedCoreMap.remove(appVMSubmissionIPToAppVMManIP.get(rsipURI));
+    }
+
+    public Computer.AllocatedCore[] getAllocatedCores(String vmsipURI) throws Exception{
+        return vmAllocatedCoreMap.get(appVMSubmissionIPToAppVMManIP.get(vmsipURI));
     }
 
     public void updateVMCoresNumber(String vmmipURI, int coreCount) throws Exception{
@@ -220,4 +251,10 @@ public class RessourceManager extends AbstractComponent implements ComputerState
         avmop.doDisconnection();
     }
 
+    public String createServicePort() throws Exception{
+        RessourceManagerInboundPort port = new RessourceManagerInboundPort(this);
+        port.publishPort();
+        addPort(port);
+        return port.getPortURI();
+    }
 }
